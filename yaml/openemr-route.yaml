@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Route
+metadata:
+  name: openemr
+  annotations:
+    openshift.io/host.generated: "true"
+  labels:
+    io.kompose.service: openemr
+spec:
+  port:
+    targetPort: "443"
+  tls:
+    termination: reencrypt
+  to:
+    kind: Service
+    name: openemr
+  wildcardPolicy: None

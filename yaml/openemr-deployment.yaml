@@ -1,0 +1,106 @@
+apiVersion: apps.openshift.io/v1
+kind: DeploymentConfig
+metadata:
+  labels:
+    app: openemr
+  name: openemr
+spec:
+  replicas: 1
+  revisionHistoryLimit: 10
+  selector:
+    deploymentconfig: openemr
+  strategy:
+    activeDeadlineSeconds: 21600
+    resources: {}
+    rollingParams:
+      intervalSeconds: 1
+      maxSurge: 25%
+      maxUnavailable: 25%
+      timeoutSeconds: 600
+      updatePeriodSeconds: 1
+    type: Rolling
+  template:
+    metadata:
+      annotations:
+      creationTimestamp: null
+      labels:
+        deploymentconfig: openemr
+    spec:
+      containers:
+      - args:
+        env:
+        - name: MYSQL_HOST
+          value: "mariadb"
+        - name: MYSQL_PASS
+          value: "openemr"
+        - name: MYSQL_ROOT_PASS
+          value: "root"
+        - name: MYSQL_USER
+          value: "openemr"
+        - name: OE_PASS
+          value: "pass"
+        - name: OE_USER
+          value: "admin"
+        image: "openemr/openemr:5.0.2"
+        imagePullPolicy: ""
+        name: openemr
+        ports:
+        - containerPort: 80
+          protocol: TCP
+        - containerPort: 443
+          protocol: TCP
+        resources: {}
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+        volumeMounts:
+        - mountPath: /var/www/localhost/htdocs/openemr/sites
+          name: websitevolume
+        - mountPath: /etc/ssl
+          name: sslvolume
+        - mountPath: /etc/ssl/certs
+          name: openemr-certs-1
+          readOnly: true
+        - mountPath: /etc/apache2/conf.d/openemr.conf
+          name: volume-02wck
+          subPath: openemr.conf
+        - mountPath: /etc/apache2/conf.d/ssl.conf
+          name: volume-apache-ssl-conf
+          subPath: ssl.conf
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      serviceAccountName: ""
+      terminationGracePeriodSeconds: 30
+      volumes:
+      - name: websitevolume
+        persistentVolumeClaim:
+          claimName: websitevolume
+      - name: sslvolume
+        persistentVolumeClaim:
+          claimName: sslvolume
+      - name: openemr-certs-1
+        secret:
+          defaultMode: 420
+          secretName: openemr-certs
+      - name: volume-02wck
+        configMap:
+          name: openemr-apache-config
+          defaultMode: 420
+          items:
+            - key: openemr.conf
+              path: openemr.conf
+      - name: volume-apache-ssl-conf
+        configMap:
+          name: apache-ssl-conf
+          defaultMode: 420
+  test: false
+  triggers:
+  - type: ConfigChange
+  - imageChangeParams:
+      automatic: true
+      containerNames:
+      - openemr
+      from:
+        kind: ImageStreamTag
+        name: openemr:5.0.2
+    type: ImageChange
