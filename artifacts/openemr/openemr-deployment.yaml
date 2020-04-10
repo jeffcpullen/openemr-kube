@@ -1,31 +1,34 @@
-apiVersion: apps/v1
-kind: Deployment
+apiVersion: apps.openshift.io/v1
+kind: DeploymentConfig
 metadata:
-  annotations:
-    kompose.cmd: kompose convert
-    kompose.version: 1.21.0 ()
-  creationTimestamp: null
   labels:
-    io.kompose.service: openemr
+    app: openemr
   name: openemr
 spec:
-  replicas: 5
+  replicas: 1
+  revisionHistoryLimit: 10
   selector:
-    matchLabels:
-      io.kompose.service: openemr
+    deploymentconfig: openemr
   strategy:
-    type: Recreate
+    activeDeadlineSeconds: 21600
+    resources: {}
+    rollingParams:
+      intervalSeconds: 1
+      maxSurge: 25%
+      maxUnavailable: 25%
+      timeoutSeconds: 600
+      updatePeriodSeconds: 1
+    type: Rolling
   template:
     metadata:
       annotations:
-        kompose.cmd: kompose convert
-        kompose.version: 1.21.0 ()
       creationTimestamp: null
       labels:
-        io.kompose.service: openemr
+        deploymentconfig: openemr
     spec:
       containers:
-      - env:
+      - args:
+        env:
         - name: MYSQL_HOST
           valueFrom:
             secretKeyRef:
@@ -57,15 +60,17 @@ spec:
           value: "admin"
         - name: REDIS_SERVER
           value: "redis"
-        - name: SWARM_MODE
-          value: "yes"
         image: "openemr/openemr:5.0.2"
         imagePullPolicy: ""
         name: openemr
         ports:
         - containerPort: 80
+          protocol: TCP
         - containerPort: 443
+          protocol: TCP
         resources: {}
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
         volumeMounts:
         - mountPath: /var/www/localhost/htdocs/openemr/sites
           name: websitevolume
@@ -80,8 +85,11 @@ spec:
         - mountPath: /etc/apache2/conf.d/ssl.conf
           name: volume-apache-ssl-conf
           subPath: ssl.conf
+      dnsPolicy: ClusterFirst
       restartPolicy: Always
+      schedulerName: default-scheduler
       serviceAccountName: openemr
+      terminationGracePeriodSeconds: 30
       volumes:
       - name: websitevolume
         persistentVolumeClaim:
@@ -104,5 +112,14 @@ spec:
         configMap:
           name: apache-ssl-conf
           defaultMode: 420
-status: {}
-
+  test: false
+  triggers:
+  - type: ConfigChange
+  - imageChangeParams:
+      automatic: true
+      containerNames:
+      - openemr
+      from:
+        kind: ImageStreamTag
+        name: openemr:5.0.2
+    type: ImageChange
