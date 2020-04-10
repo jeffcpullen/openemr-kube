@@ -1,0 +1,18 @@
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  annotations:
+    openshift.io/host.generated: "true"
+  labels:
+    io.kompose.service: phpmyadmin
+  name: phpmyadmin
+spec:
+  port:
+    targetPort: "8081"
+  tls:
+    termination: edge
+  to:
+    kind: Service
+    name: phpmyadmin
+    weight: 100
+  wildcardPolicy: None

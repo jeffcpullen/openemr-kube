@@ -74,11 +74,13 @@ spec:
         volumeMounts:
         - mountPath: /var/www/localhost/htdocs/openemr/sites
           name: websitevolume
-        - mountPath: /etc/ssl
-          name: sslvolume
+        - mountPath: /etc/ssl/private
+          name: sslvolume-private
         - mountPath: /etc/ssl/certs
+          name: sslvolume-certs
+        - mountPath: /etc/ssl/kube
           name: openemr-certs-1
-          readOnly: true
+          readOnly: false
         - mountPath: /etc/apache2/conf.d/openemr.conf
           name: volume-02wck
           subPath: openemr.conf
@@ -94,9 +96,12 @@ spec:
       - name: websitevolume
         persistentVolumeClaim:
           claimName: websitevolume
-      - name: sslvolume
+      - name: sslvolume-certs
         persistentVolumeClaim:
           claimName: sslvolume
+      - name: sslvolume-private
+        persistentVolumeClaim:
+          claimName: sslvolume-private
       - name: openemr-certs-1
         secret:
           defaultMode: 420
