@@ -26,8 +26,8 @@ spec:
       containers:
       - env:
         - name: PMA_HOSTS
-          value: mariadb
-        image: phpmyadmin/phpmyadmin:fpm
+          value: mysql
+        image: phpmyadmin/phpmyadmin
         imagePullPolicy: ""
         name: phpmyadmin
         ports:
